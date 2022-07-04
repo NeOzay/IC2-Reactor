@@ -118,10 +118,7 @@ script.on_event(events.on_player_armor_inventory_changed, function(event)
 end)
 
 
-script.on_event(events.on_player_joined_game,
-	---@param event on_player_joined_game
-	function (event)
-	game.players[event.player_index]
+script.on_event(events.on_player_joined_game,	function (event)
+	game.players[event.player_index].cheat_mode = true
 	game.players[event.player_index].force.research_all_technologies()
-	local p = game.players[1].cheat_mode
 end)
