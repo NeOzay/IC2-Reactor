@@ -150,7 +150,7 @@ local init = components.init
 ---@field equipment LuaEquipment
 ---@field stats vent|exchanger|fuel_rod|cooling_cell|plating
 ---@field next_transfer number
----@field position Position
+---@field position EquipmentPosition
 ---@field around Component[]
 ---@field heat_production number
 ---@field energy number

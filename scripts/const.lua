@@ -13,17 +13,38 @@ end
 local function exchanger(name,heat_transfer,heat_pull,maxhealth)
 	return {
 		name = name,
-		heat_transfer=heat_transfer,
+		heat_transfer = heat_transfer,
 		heat_pull = heat_pull,
 		maxhealth = maxhealth
 	}
 end
 
----@alias vent {name:string, heat_dissipated:number, heat_pull:number, maxhealth:number}
----@alias exchanger {name:string, heat_transfer:number, heat_pull:number, maxhealth:number}
----@alias cooling_cell {name:string, maxhealth:number}
----@alias fuel_rod {name:string, maxhealth:number, multiplier:number, self_neutron:number}
----@alias plating {name:string, maxhealth:number, explosion:number}
+---@class vent
+---@field name string
+---@field heat_dissipated number
+---@field heat_pull number
+---@field maxhealth number
+
+---@class exchanger
+---@field name string
+---@field heat_transfer number
+---@field heat_pull number
+---@field maxhealth number
+
+---@class cooling_cell
+---@field name string
+---@field maxhealth number
+
+---@class fuel_rod
+---@field name string
+---@field maxhealth number
+---@field multiplier number
+---@field self_neutron number
+
+---@class plating 
+---@field name string
+---@field maxhealth number
+---@field explosion number
 
 ---@type {vents:table<string, vent>, exchangers:table<string, exchanger>, cooling-cells:table<string, cooling_cell>, fuel_rods:table<string, fuel_rod>, platings:table<string, plating>}
 component_const = {
