@@ -9,6 +9,6 @@
     "vscode-lua-format.configPath": ".vscode/lua-format.txt",
     "workbench.colorTheme": "Monokai Pro (Filter Spectrum)",
     "Lua.runtime.version": "Lua 5.2",
-    "Lua.workspace.library": ["C:/Users/colpa/Documents/Code_Informatique/LUA/Factorio_doc/factorio_doc/"],
+
     "Lua.runtime.plugin":".vscode/lua/plugin.lua"
 }

@@ -144,7 +144,7 @@ function Layout:get_component(x, y)
 end
 
 
----@param option {position:Position,equipment:LuaEquipment,by_player:string|uint|LuaPlayer}
+---@param option LuaEquipmentGrid.take
 ---@return SimpleItemStack
 function Layout:remove_component(option)
 	local item = self.raw_grid.take{
@@ -155,7 +155,6 @@ function Layout:remove_component(option)
 	self:update(self.item)
 	return item
 end
-
 
 
 ---@class IC2Reactor_Core

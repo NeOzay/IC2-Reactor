@@ -2,6 +2,7 @@ local components = {}
 
 ---@type table<string, fun(Self:Component)>
 components.init = {
+	---@param Self Component
 	["fuel-rod"] = function(Self)
 		Self.adjacent_rod = 0
 	end
@@ -9,6 +10,9 @@ components.init = {
 
 ---@type table<string, fun(Self:Component, core:IC2Reactor_Core, reactor:IC2Reactor)>
 components.on = {
+	---@param Self Component
+	---@param core IC2Reactor_Core
+	---@param reactor IC2Reactor
 	["fuel-rod"] = function(Self,core, reactor)
 		if Self:is_overheat() then
 			core.layout:remove_component({equipment = Self.equipment})
@@ -26,6 +30,8 @@ components.on = {
 		end
 	end,
 
+	---@param Self Component
+	---@param core IC2Reactor_Core
 	exchanger = function(Self, core)
 		if Self:is_overheat() then
 			core.layout:remove_component({equipment = Self.equipment})
@@ -54,6 +60,8 @@ components.on = {
 		end
 	end,
 
+	---@param Self Component
+	---@param core IC2Reactor_Core
 	vent = function(Self, core)
 		if Self:is_overheat() then
 			core.layout:remove_component({equipment = Self.equipment})
@@ -63,6 +71,8 @@ components.on = {
 		Self:remove_heat(stats.heat_dissipated)
 	end,
 
+	---@param Self Component
+	---@param core IC2Reactor_Core
 	["cooling-cell"] = function(Self, core)
 		if Self:is_overheat() then
 			core.layout:remove_component({equipment = Self.equipment})
@@ -70,11 +80,14 @@ components.on = {
 		end
 	end,
 
+	---@param Self Component
+	---@param core IC2Reactor_Core
 	["plating"] = function(Self, core)
 
 	end
 }
-
+---@param Self Component
+---@param core IC2Reactor_Core
 components.on["reactor-heat-vent"] = function (Self, core)
 	if Self:is_overheat() then
 		core.layout:remove_component({equipment = Self.equipment})
@@ -87,6 +100,9 @@ components.on["reactor-heat-vent"] = function (Self, core)
 		Self:remove_heat(stats.heat_dissipated)
 	end
 end
+
+---@param Self Component
+---@param core IC2Reactor_Core
 components.on["overclocked-heat-vent"] = function (Self, core)
 	if Self:is_overheat() then
 		core.layout:remove_component({equipment = Self.equipment})
@@ -99,6 +115,9 @@ components.on["overclocked-heat-vent"] = function (Self, core)
 		core:transfer_to(Self,stats.heat_pull)
 	end
 end
+
+---@param Self Component
+---@param core IC2Reactor_Core
 components.on["component-heat-vent"] = function (Self, core)
 	local stats = Self.stats
 	for index, around_component in pairs(Self.around) do
@@ -106,6 +125,8 @@ components.on["component-heat-vent"] = function (Self, core)
 	end
 end
 
+---@param Self Component
+---@param core IC2Reactor_Core
 components.on["reactor-heat-exchanger"] = function (Self, core)
 	if Self:is_overheat() then
 		core.layout:remove_component({equipment = Self.equipment})
@@ -121,6 +142,8 @@ components.on["reactor-heat-exchanger"] = function (Self, core)
 	end
 end
 
+---@param Self Component
+---@param core IC2Reactor_Core
 components.on["component-heat-exchanger"] = function (Self, core)
 	if Self:is_overheat() then
 		core.layout:remove_component({equipment = Self.equipment})

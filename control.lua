@@ -87,6 +87,7 @@ script.on_load(load)
 script.on_nth_tick(60, ontick)
 
 
+
 local events = defines.events
 script.on_event(events.on_built_entity, buildReactor, {{filter = "name", name = "ic2-reactor-main",mode = "or"},{filter = "name", name = "ic2-fluid-reactor-main"}})
 script.on_event(events.on_pre_player_mined_item, removeReactor, {{filter = "name", name = "ic2-reactor-main"}})
@@ -109,7 +110,6 @@ script.on_event(events.on_player_armor_inventory_changed, function(event)
 			position = player.position,
 			color = {1, 1, 1},
 			time_to_live = 80,
-			forces = {player.force},
 			create_at_cursor = false
 		}
 		player.get_main_inventory().insert(item)
@@ -118,7 +118,7 @@ script.on_event(events.on_player_armor_inventory_changed, function(event)
 end)
 
 
-script.on_event(events.on_player_joined_game,	function (event)
+script.on_event(events.on_player_joined_game, function (event)
 	game.players[event.player_index].cheat_mode = true
 	game.players[event.player_index].force.research_all_technologies()
 end)
