@@ -6,10 +6,10 @@ local Text_rendering = require("scripts.text_rendering")
 local function colorMix(x)
 	local green = math.max(1 - (x * (1 - 0.498) * 2), 0)
 	local red = math.max(math.min(5 * math.pow(x, 2) + x - 0.75, 1), 0)
-	return {red, green, 0, 1}
+	return { red, green, 0, 1 }
 end
 
-local unite = {" W", " kW", " MW", " GW", " TW"}
+local unite = { " W", " kW", " MW", " GW", " TW" }
 
 local function convertion(valeur)
 	if valeur ~= 0 then
@@ -32,62 +32,74 @@ end
 ---@field is_setup boolean
 ---@field has_redstone_signal boolean
 ---@field type string
-local reactor = {}
-reactor.__index = reactor
+local IC2Reactor = {}
+IC2Reactor.__index = IC2Reactor
 
 ---@param entity LuaEntity
-function reactor.getIC2Reactor(entity)
+function IC2Reactor.getIC2Reactor(entity)
 	return global.reactorList[entity.unit_number]
 end
 
 ---@param reactorMainEntity LuaEntity
 ---@return IC2Reactor
-function reactor.new(reactorMainEntity)
-	---@type IC2Reactor
-	local r = {
+function IC2Reactor.new(reactorMainEntity)
+	local r = setmetatable({
 		reactorMain = reactorMainEntity,
 		status = "idle",
 		is_setup = false,
 		has_redstone_signal = false,
-		type = reactorMainEntity.name
-	}
+		type = reactorMainEntity.name,
+		owner = reactorMainEntity
+	}, IC2Reactor)
 
 	global.reactorList[reactorMainEntity.unit_number] = r
-	return setmetatable(r, reactor)
+	return r
 end
 
-function reactor:setup()
-	if not self.is_setup then
-		local reactorMain = self.reactorMain
-		local surface = reactorMain.surface
-		local p, f = reactorMain.position, reactorMain.force
-
-		local inventory = surface.create_entity {name = "ic2-reactor-container", position = p, force = f}
-		inventory.destructible = false
-		self.inventory = inventory
-
-		local interface = surface.create_entity {
-			name = "ic2-reactor-interface",
-			position = {x = p.x, y = p.y + 1.5},
-			force = f
-		}
-		interface.destructible = false
-		interface.get_or_create_control_behavior()
-		interface.operable = false
-		self.interface = interface
-
-		local texts = {}
-		texts.temp = Text_rendering.new("TEMP:     %", reactorMain, {-0.65, 1.5}, {1, 1, 1, 1})
-		texts.heat = Text_rendering.new("00", reactorMain, {0.5, 1.5}, {0, 1, 0, 1})
-		texts.power = Text_rendering.new("0 W", reactorMain, {-0.65, 1}, {0, 0, 1, 1})
-		self.texts = texts
-
-		self.is_setup = true
-		return self
+function IC2Reactor.restore(object)
+	setmetatable(object, IC2Reactor)
+	for _, text in pairs(object.texts) do
+		setmetatable(text, Text_rendering)
 	end
 end
 
-function reactor:get_reactor_core()
+---@return boolean succuss
+function IC2Reactor:setup()
+	if self.is_setup then
+		return true
+	end
+	local reactorMain = self.reactorMain
+	local surface = reactorMain.surface
+	local p, f = reactorMain.position, reactorMain.force
+
+	local inventory = surface.create_entity { name = "ic2-reactor-container", position = p, force = f }
+	local interface = surface.create_entity {
+		name = "ic2-reactor-interface",
+		position = { x = p.x, y = p.y + 1.5 },
+		force = f
+	}
+	if not (inventory and interface) then
+		return false
+	end
+	inventory.destructible = false
+	self.inventory = inventory
+
+	interface.destructible = false
+	interface.get_or_create_control_behavior()
+	interface.operable = false
+	self.interface = interface
+
+	local texts = {}
+	texts.temp = Text_rendering.new("TEMP:     %", reactorMain, { -0.65, 1.5 }, { 1, 1, 1, 1 })
+	texts.heat = Text_rendering.new("00", reactorMain, { 0.5, 1.5 }, { 0, 1, 0, 1 })
+	texts.power = Text_rendering.new("0 W", reactorMain, { -0.65, 1 }, { 0, 0, 1, 1 })
+	self.texts = texts
+
+	self.is_setup = true
+	return self
+end
+
+function IC2Reactor:get_reactor_core()
 	local item = self.inventory.get_inventory(defines.inventory.chest)[1]
 	if item and item.valid_for_read and item.name:find("ic2%-reactor%-core") then
 		self.item = item
@@ -97,7 +109,7 @@ function reactor:get_reactor_core()
 	end
 end
 
-function reactor:display(core)
+function IC2Reactor:display(core)
 	local core_heat_string = string.format("%02d", math.floor((core:get_heat_percent() * 100) + 0.5))
 	local core_power_string
 	if self.has_redstone_signal then
@@ -111,7 +123,6 @@ function reactor:display(core)
 	if texts.power.current_text ~= core_power_string then
 		trace("update text power")
 		texts.power:change_text(core_power_string)
-
 	end
 	if texts.heat.current_text ~= core_heat_string then
 		trace("update text heat")
@@ -120,7 +131,7 @@ function reactor:display(core)
 	end
 end
 
-function reactor:remove(player_index)
+function IC2Reactor:remove(player_index)
 	local inventory = self.inventory
 	local item = inventory.get_inventory(defines.inventory.chest)[1]
 	if item then
@@ -141,12 +152,12 @@ function reactor:remove(player_index)
 	global.reactorList[self.reactorMain.unit_number] = nil
 end
 
-function reactor:on_tick()
+function IC2Reactor:on_tick()
 	local core = self:get_reactor_core()
 
 	if core then
 		local control = self.interface.get_or_create_control_behavior()
-		
+
 		if control then
 			local red_net = control.get_circuit_network(defines.wire_type.red)
 			local green_net = control.get_circuit_network(defines.wire_type.green)
@@ -181,16 +192,15 @@ function reactor:on_tick()
 			}
 			self.reactorMain.energy = self.reactorMain.energy + core.energy
 		end
-
 	else
 		if self.status == "running" then
 			self.status = "idle"
 			self.texts.power:change_text("0 W")
-			self.texts.heat:change_color({0, 1, 0})
+			self.texts.heat:change_color({ 0, 1, 0 })
 			self.texts.heat:change_text("00")
 		end
 	end
 end
 
-return reactor
+return IC2Reactor
 -- local reactor_core = reactor.inventory.get_inventory(defines.inventory.chest)[1]

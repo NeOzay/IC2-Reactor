@@ -7,7 +7,7 @@ local Text_rendering = require"scripts.text_rendering"
 
 if script.active_mods["gvv"] then require("__gvv__.gvv")() end
 
----@param event on_built_entity
+---@param event EventData.on_built_entity
 local function buildReactor(event)
 	if event.created_entity.name == "ic2-reactor-main" then
 		Reactor.new(event.created_entity):setup()
@@ -16,7 +16,7 @@ local function buildReactor(event)
 	end
 end
 
----@param event on_pre_player_mined_item
+---@param event EventData.on_pre_player_mined_item
 local function removeReactor(event)
 	Reactor.getIC2Reactor(event.entity):remove(event.player_index)
 end
@@ -29,13 +29,16 @@ local function init()
 	-- logging(serpent.block(global.reactorList) or "test")
 end
 
+local obj
+
+if obj.object_name == "LuaPlayer" then
+
+end
+
 local function load()
 	-- logging(serpent.block(global.reactorList) or "test")
 	for _, reactor in pairs(global.reactorList) do
-		setmetatable(reactor, Reactor)
-		for _, text in pairs(reactor.texts) do
-			setmetatable(text,Text_rendering)
-		end
+		Reactor.restore(reactor)
 	end
 	for _, core in pairs(global.CoreList) do
 		setmetatable(core, Reactor_core)
@@ -52,8 +55,7 @@ local function ontick(ticks)
 		reactor:on_tick()
 	end
 end
-
----@param event on_equipment_inserted
+---@param event EventData.on_equipment_inserted
 local function equipmentUpdate2(event)
 	if event.grid.prototype.name:find("reactor%-grid") then
 		for index, reactor in pairs(global.reactorList) do
@@ -65,14 +67,14 @@ local function equipmentUpdate2(event)
 	end
 end
 
----@param event on_gui_closed
+---@param event EventData.on_gui_closed
 local function equipmentUpdate(event)
 	if event.item and event.item.name:find("ic2%-reactor%-core") then
 		Reactor_core.getIC2ReactorCore(event.item):update(event.item)
 	end
 end
 
----@param event on_player_crafted_item
+---@param event EventData.on_player_crafted_item
 local function craftCore(event)
 	local item = event.item_stack
 	if item.name:find("ic2%-reactor%-core") then
@@ -102,7 +104,8 @@ script.on_event(events.on_gui_closed, equipmentUpdate)
 
 script.on_event(events.on_player_armor_inventory_changed, function(event)
 	local player = game.get_player(event.player_index)
-	local inventoryArmor = player.get_inventory(defines.inventory.character_armor)
+	local inventoryArmor = player and player.get_inventory(defines.inventory.character_armor)
+	if not (player and inventoryArmor) then return end
 	local item = inventoryArmor[1]
 	if item and item.valid_for_read and item.name:find("ic2%-reactor%-core") then
 		player.create_local_flying_text {
@@ -112,11 +115,12 @@ script.on_event(events.on_player_armor_inventory_changed, function(event)
 			time_to_live = 80,
 			create_at_cursor = false
 		}
-		player.get_main_inventory().insert(item)
-		inventoryArmor.clear()
+		local moved = player.get_main_inventory().insert(item)
+		if moved > 0 then
+			inventoryArmor.clear()
+		end
 	end
 end)
-
 
 script.on_event(events.on_player_joined_game, function (event)
 	game.players[event.player_index].cheat_mode = true

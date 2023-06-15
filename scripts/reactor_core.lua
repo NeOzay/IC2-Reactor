@@ -16,6 +16,7 @@ local function heat_calculation(rod, adjacents_rod)
 	local stats = rod.stats
 	return efficiency(stats.self_neutron + adjacents_rod) * stats.multiplier
 end
+
 ---@param rod Component
 ---@param adjacents_rod number
 local function energy_calculation(rod, adjacents_rod)
@@ -144,7 +145,7 @@ function Layout:get_component(x, y)
 end
 
 
----@param option LuaEquipmentGrid.take
+---@param option LuaEquipmentGrid.take_param
 ---@return SimpleItemStack
 function Layout:remove_component(option)
 	local item = self.raw_grid.take{
