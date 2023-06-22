@@ -170,21 +170,20 @@ local init = components.init
 ---@class Component
 ---@field type string
 ---@field name string
----@field equipment LuaEquipment
 ---@field stats vent|exchanger|fuel_rod|cooling_cell|plating
 ---@field next_transfer number
 ---@field position EquipmentPosition
 ---@field around Component[]
 ---@field heat_production number
----@field energy number
+---@field heat number
 ---@field max_heat number
 ---@field adjacent_rod number
 ---@field on_type string
 local Component = {}
 Component.__index = Component
 
----@param LuaEquipment LuaEquipment
-function Component.new(LuaEquipment)
+---@param item LuaItemStack
+function Component.new(item)
 	---@type Component
 	local c = {
 		type = ComponentType(LuaEquipment.name),
@@ -193,7 +192,7 @@ function Component.new(LuaEquipment)
 		equipment = LuaEquipment,
 		max_heat = LuaEquipment.max_energy
 	}
-	c.stats = component_const[c.type .. "s"][c.name]
+	c.stats = COMPONENT_CONST[c.type .. "s"][c.name]
 	setmetatable(c, Component)
 	c:init()
 	if on[c.name] then

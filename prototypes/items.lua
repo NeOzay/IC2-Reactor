@@ -20,18 +20,6 @@ data:extend({
 		place_result = "ic2-fluid-reactor-main",
 		stack_size = 10
 
-	},
-	{
-		type = "armor",
-		name = "ic2-reactor-core-item",
-		icon = "__IC2-Reactor__/assets/reactor_core.png",
-		icon_size = 32,
-		equipment_grid = "reactor-grid-1",
-		infinite = "false",
-		durability = 1000,
-		subgroup = "IC2-Reactor",
-		order = "c",
-		stack_size = 1
 	}
 })
 

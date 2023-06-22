@@ -47,7 +47,7 @@ end
 ---@field explosion number
 
 ---@type {vents:table<string, vent>, exchangers:table<string, exchanger>, cooling-cells:table<string, cooling_cell>, fuel_rods:table<string, fuel_rod>, platings:table<string, plating>}
-component_const = {
+COMPONENT_CONST = {
 	vents = {
 		["heat-vent"] = vent("heat-vent", 6, 0, 1000),
 		["advanced-heat-vent"] = vent("advanced-heat-vent", 12, 0, 1000),
@@ -78,13 +78,14 @@ component_const = {
 	}
 }
 
-reactor_const = {
+REACTOR_CONST = {
 	maxhealth = 10000,
 	power = 900000
 }
 
-signals_ID = {}
-signals_ID.redstone = {type = "virtual", name = "redstone-signal"}
+REACTOR_GRID = { w = 9, h = 6 }
+SIGNALS_ID = {}
+SIGNALS_ID.redstone = {type = "virtual", name = "redstone-signal"}
 
 ---@alias ComponentType '"vent"'|'"fuel-rod"'|'"exchanger"'|'"cooling-cell"'|'"plating"'
 

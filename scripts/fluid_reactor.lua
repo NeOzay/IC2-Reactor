@@ -2,7 +2,7 @@ local reactor_core = require "scripts.reactor_core"
 
 local Text_rendering = require("scripts.text_rendering")
 
----@class IC2FluidReactor
+---@class IC2FluidReactor:IC2Reactor
 ---@field inventory LuaEntity
 ---@field reactorMain LuaEntity
 ---@field interface LuaEntity
@@ -25,7 +25,7 @@ function fluid_reactor.new(reactorMainEntity)
 		has_redstone_signal = false,
 		type = reactorMainEntity.name
 	}
-	global.reactorList[reactorMainEntity.unit_number] = r
+	global.reactors[reactorMainEntity.unit_number] = r
 	return setmetatable(r, fluid_reactor)
 end
 

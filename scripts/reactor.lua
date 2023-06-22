@@ -1,4 +1,4 @@
-local reactor_core = require "scripts.reactor_core"
+local Layout = require "scripts.layout"
 
 local Text_rendering = require("scripts.text_rendering")
 
@@ -23,21 +23,21 @@ local function convertion(valeur)
 end
 
 ---@class IC2Reactor
----@field inventory LuaEntity
 ---@field reactorMain LuaEntity
 ---@field interface LuaEntity
 ---@field item LuaItemStack
 ---@field texts table<string, Text_rendering>
----@field status string
+---@field status "idle"|"running"
 ---@field is_setup boolean
 ---@field has_redstone_signal boolean
+---@field guis
 ---@field type string
 local IC2Reactor = {}
 IC2Reactor.__index = IC2Reactor
 
 ---@param entity LuaEntity
 function IC2Reactor.getIC2Reactor(entity)
-	return global.reactorList[entity.unit_number]
+	return global.reactors[entity.unit_number]
 end
 
 ---@param reactorMainEntity LuaEntity
@@ -52,7 +52,7 @@ function IC2Reactor.new(reactorMainEntity)
 		owner = reactorMainEntity
 	}, IC2Reactor)
 
-	global.reactorList[reactorMainEntity.unit_number] = r
+	global.reactors[reactorMainEntity.unit_number] = r
 	return r
 end
 
@@ -63,7 +63,7 @@ function IC2Reactor.restore(object)
 	end
 end
 
----@return boolean succuss
+---@return boolean, IC2Reactor? success
 function IC2Reactor:setup()
 	if self.is_setup then
 		return true
@@ -72,17 +72,14 @@ function IC2Reactor:setup()
 	local surface = reactorMain.surface
 	local p, f = reactorMain.position, reactorMain.force
 
-	local inventory = surface.create_entity { name = "ic2-reactor-container", position = p, force = f }
 	local interface = surface.create_entity {
 		name = "ic2-reactor-interface",
 		position = { x = p.x, y = p.y + 1.5 },
 		force = f
 	}
-	if not (inventory and interface) then
+	if not interface then
 		return false
 	end
-	inventory.destructible = false
-	self.inventory = inventory
 
 	interface.destructible = false
 	interface.get_or_create_control_behavior()
@@ -96,17 +93,7 @@ function IC2Reactor:setup()
 	self.texts = texts
 
 	self.is_setup = true
-	return self
-end
-
-function IC2Reactor:get_reactor_core()
-	local item = self.inventory.get_inventory(defines.inventory.chest)[1]
-	if item and item.valid_for_read and item.name:find("ic2%-reactor%-core") then
-		self.item = item
-		return getIC2ReactorCore(item)
-	else
-		self.item = nil
-	end
+	return true, self
 end
 
 function IC2Reactor:display(core)
@@ -132,24 +119,8 @@ function IC2Reactor:display(core)
 end
 
 function IC2Reactor:remove(player_index)
-	local inventory = self.inventory
-	local item = inventory.get_inventory(defines.inventory.chest)[1]
-	if item then
-		if player_index then
-			local player = game.get_player(player_index)
-			if player.can_insert(item) then
-				player.insert(item)
-			end
-		else
-			local core = reactor_core.getIC2ReactorCore(item)
-			if core then
-				core:remove()
-			end
-		end
-	end
-	inventory.destroy()
 	self.interface.destroy()
-	global.reactorList[self.reactorMain.unit_number] = nil
+	global.reactors[self.reactorMain.unit_number] = nil
 end
 
 function IC2Reactor:on_tick()
@@ -164,9 +135,9 @@ function IC2Reactor:on_tick()
 
 			local signal
 			if red_net then
-				signal = red_net.get_signal(signals_ID.redstone)
+				signal = red_net.get_signal(SIGNALS_id.redstone)
 			elseif green_net then
-				signal = green_net.get_signal(signals_ID.redstone)
+				signal = green_net.get_signal(SIGNALS_id.redstone)
 			end
 
 			if signal and signal > 0 then
@@ -202,5 +173,8 @@ function IC2Reactor:on_tick()
 	end
 end
 
+function IC2Reactor:open_gui(player)
+	
+end
+
 return IC2Reactor
--- local reactor_core = reactor.inventory.get_inventory(defines.inventory.chest)[1]

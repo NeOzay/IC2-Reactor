@@ -9,10 +9,15 @@ if script.active_mods["gvv"] then require("__gvv__.gvv")() end
 
 ---@param event EventData.on_built_entity
 local function buildReactor(event)
+	local reactor ---@type IC2Reactor
 	if event.created_entity.name == "ic2-reactor-main" then
-		Reactor.new(event.created_entity):setup()
+		reactor = Reactor.new(event.created_entity)
 	elseif event.created_entity.name == "ic2-fluid-reactor-main" then
-		Fluid_reactor.new(event.created_entity):setup()
+		reactor = Fluid_reactor.new(event.created_entity)
+	end
+	local success = reactor:setup()
+	if not success then
+		game.get_player(event.player_index).print("oh noooo!!")
 	end
 end
 
@@ -23,58 +28,23 @@ end
 
 local function init()
 	---@type IC2Reactor[]
-	global.reactorList = global.reactorList or {}
-	---@type IC2Reactor_Core[]
-	global.CoreList = global.CoreList or {}
-	-- logging(serpent.block(global.reactorList) or "test")
+	global.reactors = global.reactors or {}
 end
 
 local function load()
 	-- logging(serpent.block(global.reactorList) or "test")
-	for _, reactor in pairs(global.reactorList) do
+	for _, reactor in pairs(global.reactors) do
 		Reactor.restore(reactor)
-	end
-	for _, core in pairs(global.CoreList) do
-		setmetatable(core, Reactor_core)
-		setmetatable(core.layout, Reactor_core.Layout)
-		for _, component in pairs(core.layout.grid) do
-			setmetatable(component,Reactor_core.Component)
-		end
 	end
 end
 
 ---@param ticks NthTickEventData
 local function ontick(ticks)
-	for key, reactor in pairs(global.reactorList) do
+	for key, reactor in pairs(global.reactors) do
 		reactor:on_tick()
 	end
 end
----@param event EventData.on_equipment_inserted
-local function equipmentUpdate2(event)
-	if event.grid.prototype.name:find("reactor%-grid") then
-		for index, reactor in pairs(global.reactorList) do
-			local core = reactor:get_reactor_core()
-			if reactor.item and reactor.item.grid and reactor.item.grid == event.grid then
-				core:update(reactor.item)
-			end
-		end
-	end
-end
 
----@param event EventData.on_gui_closed
-local function equipmentUpdate(event)
-	if event.item and event.item.name:find("ic2%-reactor%-core") then
-		Reactor_core.getIC2ReactorCore(event.item):update(event.item)
-	end
-end
-
----@param event EventData.on_player_crafted_item
-local function craftCore(event)
-	local item = event.item_stack
-	if item.name:find("ic2%-reactor%-core") then
-		Reactor_core.new(event.item_stack)
-	end
-end
 
 script.on_init(init)
 script.on_configuration_changed(init)
@@ -89,32 +59,6 @@ script.on_event(events.on_built_entity, buildReactor, {{filter = "name", name = 
 script.on_event(events.on_pre_player_mined_item, removeReactor, {{filter = "name", name = "ic2-reactor-main"}})
 script.on_event(events.on_entity_died, removeReactor, {{filter = "name", name = "ic2-reactor-main"}})
 
-script.on_event(events.on_equipment_inserted, equipmentUpdate2)
-script.on_event(events.on_equipment_removed, equipmentUpdate2)
-
-script.on_event(events.on_player_crafted_item, craftCore)
-
-script.on_event(events.on_gui_closed, equipmentUpdate)
-
-script.on_event(events.on_player_armor_inventory_changed, function(event)
-	local player = game.get_player(event.player_index)
-	local inventoryArmor = player and player.get_inventory(defines.inventory.character_armor)
-	if not (player and inventoryArmor) then return end
-	local item = inventoryArmor[1]
-	if item and item.valid_for_read and item.name:find("ic2%-reactor%-core") then
-		player.create_local_flying_text {
-			text = item.name .. " is not a armor",
-			position = player.position,
-			color = {1, 1, 1},
-			time_to_live = 80,
-			create_at_cursor = false
-		}
-		local moved = player.get_main_inventory().insert(item)
-		if moved > 0 then
-			inventoryArmor.clear()
-		end
-	end
-end)
 
 script.on_event(events.on_player_joined_game, function (event)
 	game.players[event.player_index].cheat_mode = true
