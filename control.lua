@@ -29,12 +29,6 @@ local function init()
 	-- logging(serpent.block(global.reactorList) or "test")
 end
 
-local obj
-
-if obj.object_name == "LuaPlayer" then
-
-end
-
 local function load()
 	-- logging(serpent.block(global.reactorList) or "test")
 	for _, reactor in pairs(global.reactorList) do
