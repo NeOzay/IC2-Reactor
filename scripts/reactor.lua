@@ -30,8 +30,11 @@ end
 ---@field is_setup boolean
 ---@field has_redstone_signal boolean
 ---@field guis table<integer,Gui>
----@field layout Layout
+---@field layout IC2Layout
 ---@field type string
+---@field internal_heat number
+---@field max_internal_heat number
+---@field health number
 ---@field id integer
 local IC2Reactor = {}
 IC2Reactor.__index = IC2Reactor
@@ -44,18 +47,21 @@ end
 ---@param reactorMainEntity LuaEntity
 ---@return IC2Reactor
 function IC2Reactor.new(reactorMainEntity)
-	local r = setmetatable({
+	local reactor = setmetatable({
 		reactorMain = reactorMainEntity,
 		status = "idle",
 		is_setup = false,
 		has_redstone_signal = false,
 		type = reactorMainEntity.name,
 		owner = reactorMainEntity,
-		id = reactorMainEntity.unit_number
+		id = reactorMainEntity.unit_number,
+		max_internal_heat = REACTOR_CONST.maxhealth,
+		internal_heat = 0
 	}, IC2Reactor)
 
-	global.reactors[reactorMainEntity.unit_number] = r
-	return r
+	global.reactors[reactorMainEntity.unit_number] = reactor
+	global.class_instances.IC2Reactor[reactor] = true
+	return reactor
 end
 
 function IC2Reactor.restore(object)
@@ -126,57 +132,72 @@ function IC2Reactor:remove(player_index)
 end
 
 function IC2Reactor:on_tick()
-	local core = self:get_reactor_core()
 
-	if core then
-		local control = self.interface.get_or_create_control_behavior()
+	local control = self.interface.get_or_create_control_behavior()
 
-		if control then
-			local red_net = control.get_circuit_network(defines.wire_type.red)
-			local green_net = control.get_circuit_network(defines.wire_type.green)
+	if control then
+		local red_net = control.get_circuit_network(defines.wire_type.red)
+		local green_net = control.get_circuit_network(defines.wire_type.green)
 
-			local signal
-			if red_net then
-				signal = red_net.get_signal(SIGNALS_id.redstone)
-			elseif green_net then
-				signal = green_net.get_signal(SIGNALS_id.redstone)
-			end
+		local signal
+		if red_net then
+			signal = red_net.get_signal(SIGNALS_ID.redstone)
+		elseif green_net then
+			signal = green_net.get_signal(SIGNALS_ID.redstone)
+		end
 
-			if signal and signal > 0 then
-				self.has_redstone_signal = true
-			else
-				self.has_redstone_signal = false
-			end
+		if signal and signal > 0 then
+			self.has_redstone_signal = true
 		else
 			self.has_redstone_signal = false
 		end
-
-		if self.status == "idle" then
-			core:update(self.item)
-			self.status = "running"
-		end
-		core:on_tick(self)
-		self:display(core)
-		if core.layout.has_rod and self.has_redstone_signal then
-			self.reactorMain.surface.play_sound {
-				path = "Geiger",
-				position = self.reactorMain.position,
-				volume_modifier = 0.8
-			}
-			self.reactorMain.energy = self.reactorMain.energy + core.energy
-		end
 	else
-		if self.status == "running" then
-			self.status = "idle"
-			self.texts.power:change_text("0 W")
-			self.texts.heat:change_color({ 0, 1, 0 })
-			self.texts.heat:change_text("00")
-		end
+		self.has_redstone_signal = false
+	end
+
+	if self.status == "idle" then
+		self:update(self.item)
+		self.status = "running"
+	end
+	core:on_tick(self)
+	--self:display(core)
+	if core.layout.has_rod and self.has_redstone_signal then
+		self.reactorMain.surface.play_sound {
+			path = "Geiger",
+			position = self.reactorMain.position,
+			volume_modifier = 0.8
+		}
+		self.reactorMain.energy = self.reactorMain.energy + core.energy
 	end
 end
 
+function IC2Reactor:calc_health()
+	self.health = math.min((self.max_internal_heat - self.internal_heat) / self.max_internal_heat, 0)
+end
+
+---@param heat number
+function IC2Reactor:set_heat(heat)
+	self.heat = math.max(heat, 0)
+	self:calc_health()
+	return self.heat
+end
+
+function IC2Reactor:add_heat(heat)
+	local old_heat = self.internal_heat
+	self.internal_heat = math.max(self.internal_heat + heat, 0)
+	self:calc_health()
+	return self.internal_heat - old_heat
+end
+
+---@param truc IC2Component|IC2Reactor
+---@param heat number
+function IC2Reactor:transfer_to(truc, heat)
+	local pull_heat = self:add_heat(-heat)
+	truc:add_heat(math.abs(pull_heat))
+end
+
 function IC2Reactor:open_gui(player)
-	
+
 end
 
 return IC2Reactor

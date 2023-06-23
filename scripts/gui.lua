@@ -3,7 +3,7 @@
 ---@field reactor_interior_frame LuaGuiElement
 ---@field slot_list LuaGuiElement[]
 ---@field player LuaPlayer
----@field layout Layout
+---@field layout IC2Layout
 ---@field reactor IC2Reactor
 local Gui = {}
 Gui.__index = Gui

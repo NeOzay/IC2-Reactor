@@ -27,8 +27,13 @@ local function removeReactor(event)
 end
 
 local function init()
-	---@type IC2Reactor[]
-	global.reactors = global.reactors or {}
+	local function weak_table() return setmetatable({}, {__mode = "k"})	end
+	global.reactors = global.reactors or {} ---@type IC2Reactor[]
+	global.class_instances = global.class_instances or {}
+	local class_instances = global.class_instances
+	global.class_instances.IC2Reactor = class_instances.IC2Reactor or weak_table()
+	global.class_instances.IC2Component = class_instances.IC2Component or weak_table()
+	global.class_instances.IC2Layout = class_instances.IC2Layout or weak_table()
 end
 
 local function load()
