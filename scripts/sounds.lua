@@ -1,0 +1,2 @@
+---@class sound
+local sound = {}
