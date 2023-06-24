@@ -58,7 +58,7 @@ function IC2Reactor.new(reactorMainEntity)
 		max_internal_heat = REACTOR_CONST.maxhealth,
 		internal_heat = 0
 	}, IC2Reactor)
-
+	reactor.layout = Layout.new(reactor, REACTOR_GRID.w, REACTOR_GRID.h)
 	global.reactors[reactorMainEntity.unit_number] = reactor
 	global.class_instances.IC2Reactor[reactor] = true
 	return reactor
@@ -155,20 +155,16 @@ function IC2Reactor:on_tick()
 		self.has_redstone_signal = false
 	end
 
-	if self.status == "idle" then
-		self:update(self.item)
-		self.status = "running"
-	end
-	core:on_tick(self)
+	local energy_product = self.layout:on_tick()
 	--self:display(core)
-	if core.layout.has_rod and self.has_redstone_signal then
+	if self.layout.rod_count and self.has_redstone_signal then
 		self.reactorMain.surface.play_sound {
 			path = "Geiger",
 			position = self.reactorMain.position,
 			volume_modifier = 0.8
 		}
-		self.reactorMain.energy = self.reactorMain.energy + core.energy
 	end
+	self.reactorMain.energy = self.reactorMain.energy + energy_product
 end
 
 function IC2Reactor:calc_health()

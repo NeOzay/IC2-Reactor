@@ -31,7 +31,7 @@ end
 ---@field grid table<number, IC2Component>
 ---@field width number
 ---@field height number
----@field has_rod boolean
+---@field rod_count integer
 ---@field energy number
 local Layout = {}
 Layout.__index = Layout
@@ -60,8 +60,9 @@ function Layout:remove_component(x, y)
 	return component
 end
 
+---@param self IC2Layout
 ---@param component IC2Component
-function Layout:update(component)
+local function update(self, component)
 	---@type IC2Component[]
 	local around = {}
 
@@ -80,10 +81,9 @@ function Layout:update(component)
 		end
 		component.next_transfer = next(around)
 		if component.type == "fuel-rod" then
-			self.has_rod = true
+			self.rod_count = true
 			component.heat_production = heat_calculation(component, component.adjacent_rod)
-			component.energy = energy_calculation(component)
-			self.energy = self.energy + component.energy
+			component.energy_prod = energy_calculation(component)
 		end
 	elseif component.name == "component-heat-vent" then
 		local x, y = component:get_pos()
@@ -102,11 +102,10 @@ function Layout:update(component)
 end
 
 function Layout:update_all()
-		self.energy = 0
-		self.has_rod = false
+		self.rod_count = false
 
 	for index, component in pairs(self.grid) do
-		self:update(component)
+		update(self, component)
 	end
 end
 
@@ -115,13 +114,13 @@ function Layout:get_component(x, y)
 	return self.grid[x + (y - 1) * self.width]
 end
 
----@param reactor IC2Reactor
 ---@return number
-function Layout:on_tick(reactor)
+function Layout:on_tick()
 	local energy = 0
 	for _, component in ipairs(self.grid) do
 		energy = energy + (component:on() or 0)
 	end
 	return energy
 end
+
 return Layout

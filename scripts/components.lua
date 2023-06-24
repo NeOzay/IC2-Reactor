@@ -14,14 +14,15 @@ local ON = {
 		end
 		local reactor = self.reactor
 		if reactor.has_redstone_signal then
-			local around_component = self:get_current_adjacent()
 			self:add_heat(1)
+			local around_component = self:get_current_adjacent()
 			if around_component then
 				self:get_next_transfer()
 				around_component:add_heat(self.heat_production)
 			else
 				reactor.internal_heat = reactor.internal_heat + self.heat_production
 			end
+			return self.energy_prod
 		end
 	end,
 
@@ -159,7 +160,7 @@ end
 ---@field heat number
 ---@field max_heat number
 ---@field health number
----@field energy number
+---@field energy_prod number
 ---@field adjacent_rod number
 ---@field on_type string
 local IC2Component = {}
