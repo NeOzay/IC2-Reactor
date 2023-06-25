@@ -173,12 +173,4 @@ data:extend({
 		ingredients = {},
 		result = "ic2-fluid-reactor-main-item"
 	},
-	{
-		type = "recipe",
-		name = "ic2-reactor-core-item",
-		enabled = true,
-		energy_required = 1,
-		ingredients = {},
-		result = "ic2-reactor-core-item"
-	}
 })

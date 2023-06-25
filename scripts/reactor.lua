@@ -1,47 +1,33 @@
 local Layout = require "scripts.layout"
-
-local Text_rendering = require("scripts.text_rendering")
-
----@param x number
-local function colorMix(x)
-	local green = math.max(1 - (x * (1 - 0.498) * 2), 0)
-	local red = math.max(math.min(5 * math.pow(x, 2) + x - 0.75, 1), 0)
-	return { red, green, 0, 1 }
-end
-
-local unite = { " W", " kW", " MW", " GW", " TW" }
-
-local function convertion(valeur)
-	if valeur ~= 0 then
-		local vlog = math.floor(math.log(valeur, 10) / 3)
-		valeur = valeur * 10 ^ (-3 * vlog)
-		local aron = math.floor(math.log(valeur, 10)) + 1
-		return string.format("%0." .. tostring(4 - aron) .. "f", valeur) .. unite[vlog + 1]
-	else
-		return "0 W"
-	end
-end
+local Gui = require "scripts.gui"
 
 ---@class IC2Reactor
 ---@field reactorMain LuaEntity
 ---@field interface LuaEntity
----@field texts table<string, Text_rendering>
 ---@field status "idle"|"running"
 ---@field is_setup boolean
 ---@field has_redstone_signal boolean
----@field guis table<integer,Gui>
+---@field guis table<integer, IC2Gui>
 ---@field layout IC2Layout
 ---@field type string
 ---@field internal_heat number
 ---@field max_internal_heat number
 ---@field health number
+---@field energy number
 ---@field id integer
 local IC2Reactor = {}
 IC2Reactor.__index = IC2Reactor
 
----@param entity LuaEntity
-function IC2Reactor.getIC2Reactor(entity)
-	return global.reactors[entity.unit_number]
+function IC2Reactor.restore()
+	for instance in pairs(global.class_instances.IC2Reactor) do
+		setmetatable(instance, IC2Reactor)
+	end
+end
+
+---@param unit_number number?
+---@return IC2Reactor?
+function IC2Reactor.getIC2Reactor(unit_number)
+	return global.reactors[unit_number]
 end
 
 ---@param reactorMainEntity LuaEntity
@@ -53,22 +39,17 @@ function IC2Reactor.new(reactorMainEntity)
 		is_setup = false,
 		has_redstone_signal = false,
 		type = reactorMainEntity.name,
-		owner = reactorMainEntity,
 		id = reactorMainEntity.unit_number,
 		max_internal_heat = REACTOR_CONST.maxhealth,
-		internal_heat = 0
+		internal_heat = 0,
+		guis = {},
+		energy = 0,
 	}, IC2Reactor)
 	reactor.layout = Layout.new(reactor, REACTOR_GRID.w, REACTOR_GRID.h)
+	reactor:calc_health()
 	global.reactors[reactorMainEntity.unit_number] = reactor
 	global.class_instances.IC2Reactor[reactor] = true
 	return reactor
-end
-
-function IC2Reactor.restore(object)
-	setmetatable(object, IC2Reactor)
-	for _, text in pairs(object.texts) do
-		setmetatable(text, Text_rendering)
-	end
 end
 
 ---@return boolean, IC2Reactor? success
@@ -94,36 +75,8 @@ function IC2Reactor:setup()
 	interface.operable = false
 	self.interface = interface
 
-	local texts = {}
-	texts.temp = Text_rendering.new("TEMP:     %", reactorMain, { -0.65, 1.5 }, { 1, 1, 1, 1 })
-	texts.heat = Text_rendering.new("00", reactorMain, { 0.5, 1.5 }, { 0, 1, 0, 1 })
-	texts.power = Text_rendering.new("0 W", reactorMain, { -0.65, 1 }, { 0, 0, 1, 1 })
-	self.texts = texts
-
 	self.is_setup = true
 	return true, self
-end
-
-function IC2Reactor:display(core)
-	local core_heat_string = string.format("%02d", math.floor((core:get_heat_percent() * 100) + 0.5))
-	local core_power_string
-	if self.has_redstone_signal then
-		core_power_string = convertion(core.layout.energy)
-	else
-		core_power_string = "0 w"
-	end
-
-	local texts = self.texts
-
-	if texts.power.current_text ~= core_power_string then
-		trace("update text power")
-		texts.power:change_text(core_power_string)
-	end
-	if texts.heat.current_text ~= core_heat_string then
-		trace("update text heat")
-		texts.heat:change_color(colorMix(core:get_heat_percent()))
-		texts.heat:change_text(core_heat_string)
-	end
 end
 
 function IC2Reactor:remove(player_index)
@@ -135,29 +88,26 @@ function IC2Reactor:on_tick()
 
 	local control = self.interface.get_or_create_control_behavior()
 
+	local signal = 0
 	if control then
 		local red_net = control.get_circuit_network(defines.wire_type.red)
 		local green_net = control.get_circuit_network(defines.wire_type.green)
 
-		local signal
 		if red_net then
-			signal = red_net.get_signal(SIGNALS_ID.redstone)
-		elseif green_net then
-			signal = green_net.get_signal(SIGNALS_ID.redstone)
+			signal = signal + red_net.get_signal(SIGNALS_ID.redstone)
 		end
-
-		if signal and signal > 0 then
-			self.has_redstone_signal = true
-		else
-			self.has_redstone_signal = false
+		if green_net then
+			signal = signal + green_net.get_signal(SIGNALS_ID.redstone)
 		end
+	end
+	if signal > 0 then
+		self.has_redstone_signal = true
 	else
 		self.has_redstone_signal = false
 	end
 
 	local energy_product = self.layout:on_tick()
-	--self:display(core)
-	if self.layout.rod_count and self.has_redstone_signal then
+	if self.layout.rod_count > 0 and self.has_redstone_signal then
 		self.reactorMain.surface.play_sound {
 			path = "Geiger",
 			position = self.reactorMain.position,
@@ -165,10 +115,11 @@ function IC2Reactor:on_tick()
 		}
 	end
 	self.reactorMain.energy = self.reactorMain.energy + energy_product
+	self.energy = energy_product
 end
 
 function IC2Reactor:calc_health()
-	self.health = math.min((self.max_internal_heat - self.internal_heat) / self.max_internal_heat, 0)
+	self.health = math.max((self.max_internal_heat - self.internal_heat) / self.max_internal_heat, 0)
 end
 
 ---@param heat number
@@ -192,8 +143,43 @@ function IC2Reactor:transfer_to(truc, heat)
 	truc:add_heat(math.abs(pull_heat))
 end
 
-function IC2Reactor:open_gui(player)
+---@param player LuaPlayer
+---@param reactor IC2Reactor
+local function create_gui(player, reactor)
+	local gui = Gui.new(player, reactor)
+	reactor.guis[player.index] = gui
+	return gui
+end
 
+---@param player LuaPlayer
+function IC2Reactor:open_gui(player)
+	local gui = self.guis[player.index] or create_gui(player, self)
+	gui.main_frame.force_auto_center()
+	gui:show()
+	return gui.main_frame
+end
+
+---@param player LuaPlayer
+function IC2Reactor:close_gui(player)
+	local gui = self.guis[player.index] or create_gui(player, self)
+	if gui then
+		gui:hide()
+	end
+	return gui.main_frame
+end
+
+---@param player LuaPlayer
+function IC2Reactor:toggle_gui(player)
+	local gui = self.guis[player.index] or create_gui(player, self)
+	return gui.main_frame, gui:toggle()
+end
+
+function IC2Reactor:destroy_gui(player_index)
+	local gui = self.guis[player.index]
+	if gui then
+		gui.main_frame:destroy()
+		self.guis[player_index] = nil
+	end
 end
 
 return IC2Reactor

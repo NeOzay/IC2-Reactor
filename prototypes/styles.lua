@@ -2,9 +2,29 @@ local styles = data.raw["gui-style"].default
 
 styles["IC2_content_frame"] = {
     type = "frame_style",
-    parent = "inside_shallow_frame_with_padding",
+    parent = "frame",
     vertically_stretchable = "on",
     horizontally_stretchable = "on"
+}
+
+styles["IC2_titlebar_flow"] = {
+    type = "horizontal_flow_style",
+    horizontal_spacing = 8,
+
+}
+
+styles["IC2_title_text"] = {
+    type = "label_style",
+    parent = "frame_title"
+}
+
+styles["IC2_title_drag"] = {
+  type = "empty_widget_style",
+  parent = "draggable_space",
+  left_margin = 4,
+  right_margin = 4,
+  height = 24,
+  horizontally_stretchable = "on"
 }
 
 styles["IC2_interior_frame"] = {

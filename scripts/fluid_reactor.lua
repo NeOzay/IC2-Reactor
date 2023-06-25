@@ -1,4 +1,4 @@
-local reactor_core = require "scripts.reactor_core"
+local reactor_core = require "scripts.layout"
 
 local Text_rendering = require("scripts.text_rendering")
 

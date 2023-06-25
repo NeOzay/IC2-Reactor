@@ -1,40 +1,29 @@
 ---@type table<string, fun(Self:IC2Component)>
 local INIT = {
-	["fuel-rod"] = function(self)
-		self.adjacent_rod = 0
-	end
 }
 
 ---@type table<string, fun(self:IC2Component):number?>
 local ON = {
 	["fuel-rod"] = function(self)
-		if self:is_overheat() then
-			self:remove()
-			return
-		end
 		local reactor = self.reactor
 		if reactor.has_redstone_signal then
 			self:add_heat(1)
 			local around_component = self:get_current_adjacent()
+			self:get_next_transfer()
 			if around_component then
-				self:get_next_transfer()
 				around_component:add_heat(self.heat_production)
 			else
-				reactor.internal_heat = reactor.internal_heat + self.heat_production
+				reactor:add_heat(self.heat_production)
 			end
 			return self.energy_prod
 		end
 	end,
 
 	exchanger = function(self)
-		if self:is_overheat() then
-			self:remove()
-			return
-		end
-
 		local reactor = self.reactor
 		local stats = self.const
 		local around_component = self:get_current_adjacent()
+		self:get_next_transfer()
 		if around_component then
 			local heat_comp = self.health
 			local heat_around = around_component.health
@@ -43,32 +32,23 @@ local ON = {
 			elseif heat_comp > heat_around then
 				self:transfer_to(around_component, stats.heat_transfer)
 			end
-			self:get_next_transfer()
 		end
 
-		local heat_comp = self.health
-		local heat_core = reactor.internal_heat
-		if heat_comp < heat_core then
+		local component_health = self.health
+		local reactor_health = reactor.health
+		if component_health > reactor_health then
 			reactor:transfer_to(self, stats.heat_pull)
-		elseif heat_comp > heat_core then
+		elseif component_health < reactor_health then
 			self:transfer_to(reactor, stats.heat_pull)
 		end
 	end,
 
 	vent = function(self)
-		if self:is_overheat() then
-			self:remove()
-			return
-		end
 		local stats = self.const
 		self:add_heat(-stats.heat_dissipated)
 	end,
 
 	["cooling-cell"] = function(self)
-		if self:is_overheat() then
-		 self:remove()
-			return
-		end
 	end,
 
 	["plating"] = function(self)
@@ -76,10 +56,6 @@ local ON = {
 	end
 }
 ON["reactor-heat-vent"] = function(self)
-	if self:is_overheat() then
-		self:remove()
-		return
-	end
 	local reactor = self.reactor
 	local stats = self.const
 		reactor:transfer_to(self, stats.heat_pull)
@@ -87,10 +63,6 @@ ON["reactor-heat-vent"] = function(self)
 end
 
 ON["overclocked-heat-vent"] = function(self)
-	if self:is_overheat() then
-		self:remove()
-		return
-	end
 	local reactor = self.reactor
 	local stats = self.const
 	self:add_heat(-stats.heat_dissipated)
@@ -105,39 +77,32 @@ ON["component-heat-vent"] = function(self)
 end
 
 ON["reactor-heat-exchanger"] = function(self)
-	if self:is_overheat() then
-		self:remove()
-		return
-	end
 	local reactor = self.reactor
 	local stats = self.const
-	local heat_comp = self.heat
-	local heat_core = reactor.health
-	if heat_comp < heat_core then
+	local component_health = self.health
+	local reactor_health = reactor.health
+
+	if component_health > reactor_health then
 		reactor:transfer_to(self, stats.heat_pull)
-	elseif heat_comp > heat_core then
+	else
 		self:transfer_to(reactor, stats.heat_pull)
 	end
 end
 
 ON["component-heat-exchanger"] = function(self)
-	if self:is_overheat() then
-		self:remove()
-		return
-	end
 	local stats = self.const
 	local around_component = self:get_current_adjacent()
 
 	if around_component then
-		local heat_comp = self.health
-		local heat_around = around_component.health
-		if heat_comp < heat_around then
+		local component_health = self.health
+		local reactor_health = around_component.health
+		if component_health > reactor_health then
 			around_component:transfer_to(self, stats.heat_transfer)
-		elseif heat_comp > heat_around then
+		elseif component_health < reactor_health then
 			self:transfer_to(around_component, stats.heat_transfer)
 		end
-		self:get_next_transfer()
 	end
+	self:get_next_transfer()
 end
 
 ---@param self IC2Component
@@ -166,19 +131,27 @@ end
 local IC2Component = {}
 IC2Component.__index = IC2Component
 
+function IC2Component.restore()
+	for instance in pairs(global.class_instances.IC2Component) do
+		setmetatable(instance, IC2Component)
+	end
+end
+
 ---@param item LuaItemStack
 function IC2Component.new(reactor, item, x, y)
 	local component = setmetatable({
 		type = ComponentType(item.name),
 		name = item.name,
 		reactor = reactor,
-		power = 0,
+		energy_prod = 0,
 		x = x,
-		y = y
+		y = y,
+		adjacent_rod = 0
 	}, IC2Component)
 	component.const = COMPONENT_CONST[component.type][component.name]
 	component.max_heat = component.const.maxhealth
-	component.heat = (1 - item.health) * component.max_heat
+	component.heat = math.floor((1 - item.health) * component.max_heat)
+	component:calc_health()
 	init(component)
 	if ON[component.name] then
 		component.on_type = component.name
@@ -235,15 +208,12 @@ function IC2Component:transfer_to(truc, heat)
 end
 
 function IC2Component:calc_health()
-	self.health = math.min((self.max_heat - self.heat) / self.max_heat, 0)
+	self.health = math.max((self.max_heat - self.heat) / self.max_heat, 0)
 end
 
 function IC2Component:is_overheat()
 	return self.heat >= self.max_heat
 end
 
-function IC2Component:remove()
-	return self.reactor.layout:remove_component(self.x, self.y)
-end
 
 return IC2Component

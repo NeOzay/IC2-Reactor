@@ -7,9 +7,8 @@ local function componentUranium(name, iconPath)
 		name = name,
 		icon = "__IC2-Reactor__/assets/component/fuel_rod/"..iconPath..".png",
 		icon_size = 16,
-		placed_as_equipment_result = name,
 		subgroup = "fuel-rods",
-		stack_size = 1,
+		stack_size = 64,
 		default_request_amount = 64,
 		order = tostring(order.uranium)
 	})
@@ -23,8 +22,8 @@ local function componentExchanger(name, iconPath)
 		icon = "__IC2-Reactor__/assets/component/"..iconPath..".png",
 		icon_size = 16,
 		subgroup = "exchangers",
-		stack_size = 1,
-		default_request_amount = 64444,
+		stack_size = 64,
+		default_request_amount = 64,
 		order = tostring(order.exchanger)
 	})
 	order.exchanger = order.exchanger + 1
@@ -37,7 +36,7 @@ local function componentVent(name,iconPath)
 		icon = "__IC2-Reactor__/assets/component/"..iconPath..".png",
 		icon_size = 16,
 		subgroup = "vents",
-		stack_size = 1,
+		stack_size = 64,
 		default_request_amount = 64,
 		order = tostring(order.vent)
 	})
@@ -51,7 +50,7 @@ local function componentCoolingCell(name, iconPath)
 		icon = "__IC2-Reactor__/assets/component/"..iconPath..".png",
 		icon_size = 16,
 		subgroup = "cooling-cells",
-		stack_size = 1,
+		stack_size = 64,
 		default_request_amount = 1,
 		order = tostring(order.coolingCell)
 	})
@@ -65,7 +64,7 @@ local function componentPlating(name, iconPath)
 		icon = "__IC2-Reactor__/assets/component/"..iconPath..".png",
 		icon_size = 16,
 		subgroup = "platings",
-		stack_size = 1,
+		stack_size = 64,
 		default_request_amount = 1,
 		order = tostring(order.plating)
 	})
