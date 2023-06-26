@@ -83,10 +83,7 @@ function Layout:insert_component(item, x, y)
 	local component = Component.new(self.reactor, item, x, y)
 	self.grid[index] = component
 	self.component_map[component] = index
-
-	if component.type == "fuel-rod" then
-		self.rod_count = self.rod_count + 1
-	end
+	component:on_insert()
 	self:update(x,y)
 	return true
 end
@@ -100,9 +97,7 @@ function Layout:remove_component_at(x, y)
 		local index = self.component_map[component]
 		self.grid[index] = nil
 		self.component_map[component] = nil
-		if component.type == "fuel-rod" then
-			self.rod_count = math.max(self.rod_count - 1, 0)
-		end
+		component:on_remove()
 	end
 	self:update(x, y)
 	return component
@@ -114,9 +109,7 @@ function Layout:remove_component(component)
 	if index then
 		self.grid[index] = nil
 		self.component_map[component] = nil
-		if component.type == "fuel-rod" then
-			self.rod_count = math.max(self.rod_count - 1, 0)
-		end
+		component:on_remove()
 	end
 	self:update(component.x, component.y)
 end
@@ -161,6 +154,8 @@ local function update(self, x, y)
 	local neighbor_components = get_neighbor_component(self, component)
 
 	if component.type == "exchanger" or component.type == "fuel-rod" then
+		component.adjacent_rod = 0
+
 		for i, around_comp in pairs(neighbor_components) do
 			if ((around_comp.type == "vent" and around_comp.name ~= "component-heat-vent") or around_comp.type == "exchanger" or around_comp.type == "cooling-cell") then
 				around[i] = around_comp
@@ -218,7 +213,7 @@ function Layout:on_tick()
 		if component:is_overheat() then
 			self:remove_component(component)
 		else
-			energy = energy + (component:on() or 0)
+			energy = energy + component:on()
 		end
 	end
 	return energy

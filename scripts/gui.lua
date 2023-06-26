@@ -31,9 +31,8 @@ local function build_reactor_grid(gui)
       local button = slot.add { type = "sprite-button", tags = { x = x, y = y, reactor_id = gui.reactor.id }, style = "inventory_slot", name =
       "IC2_button_slot" }
       button.style.size = { 60, 60 }
-      local progressbar = slot.add { type = "progressbar", value = 0.5, style = "IC2_component_bar", name = "bar" }
+      local progressbar = slot.add { type = "progressbar", value = 0.5, style = "IC2_component_bar", name = "bar", ignored_by_interaction = true }
       progressbar.style.size = { 54, 5 }
-      progressbar.visible = false
       table.insert(gui.slot_list, slot)
     end
   end
@@ -74,6 +73,11 @@ function Gui.new(player, reactor)
   gui.reactor_heat_bar = info.add { type = "progressbar", style = "IC2_heat_bar", name = "reactor_heat_bar" }
   gui.reactor_output = info.add { type = "label", caption = "power output", name = "reactor_output" }
   build_reactor_grid(gui)
+
+  local inout = main_frame.add{ type = "flow", direction = "horizontal" }
+  inout.add{ type = "button", caption = "Import", name = "IC2_import_button", tags = {reactor_id = reactor.id}}
+  inout.add{ type = "button", caption = "Export", name = "IC2_export_button", tags = {reactor_id = reactor.id}}
+
   global.class_instances.IC2Gui[gui] = true
   return gui
 end
@@ -163,12 +167,14 @@ function Gui:clear_slot_at(x, y)
   local slot = self:get_slot(x, y)
   slot.bar.visible = false
   slot.IC2_button_slot.sprite = nil
+  slot.IC2_button_slot.tooltip = nil
 end
 
 ---@param slot LuaGuiElement
 function Gui:clear_slot(slot)
   slot.bar.visible = false
   slot.IC2_button_slot.sprite = nil
+  slot.IC2_button_slot.tooltip = ""
 end
 
 return Gui

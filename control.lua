@@ -24,12 +24,14 @@ end
 
 ---@param event EventData.on_pre_player_mined_item
 local function removeReactor(event)
-	Reactor.getIC2Reactor(event.entity.unit_number):remove(event.player_index)
+	Reactor.getIC2Reactor(event.entity.unit_number):remove()
 end
 
 local function init()
 	local function weak_table() return setmetatable({}, { __mode = "k" }) end
 	global.reactors = global.reactors or {} ---@type IC2Reactor[]
+	global.clipboard = global.clipboard or {} ---@type table<number, table<number, string>>
+
 	global.class_instances = global.class_instances or {}
 	local class_instances = global.class_instances
 	global.class_instances.IC2Reactor = class_instances.IC2Reactor or weak_table()
@@ -143,4 +145,37 @@ script.on_event(defines.events.on_gui_click, function(event)
 	if element.name == "IC2_close_button" then
 		gui:hide()
 	end
+
+	if element.name == "IC2_import_button" then
+		local clip = {}
+		for index, component in pairs(reactor.layout.grid) do
+			clip[index] = component.name
+		end
+		global.clipboard[player.index] = clip
+	end
+
+	if element.name == "IC2_export_button" then
+		local layout = reactor.layout
+		local player_inventory = player.get_main_inventory()
+		local cache = {}
+		if not player_inventory then return end
+		for index, component_name in pairs(global.clipboard[player.index] or {}) do
+			local stack = cache[component_name] or player_inventory.find_item_stack(component_name)
+			if stack and stack.valid_for_read then
+				local y = math.ceil((index/reactor.layout.width))
+				local x = ((index-1)%reactor.layout.width)+1
+				game.print(x.." "..y)
+				local success = layout:insert_component(stack, x , y)
+				if success then
+					stack.count = stack.count - 1
+				end
+				cache[component_name] = stack
+				gui:update_slot_at(x, y)
+				if not stack.valid_for_read or not stack.valid then
+					cache[component_name] = nil
+				end
+			end
+		end
+	end
+	
 end)

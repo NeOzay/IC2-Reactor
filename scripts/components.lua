@@ -1,5 +1,21 @@
----@type table<string, fun(Self:IC2Component)>
-local INIT = {
+---@type table<string, fun(self:IC2Component)>
+local ON_INSERT = {
+	["fuel-rod"] = function (self)
+		self.reactor.layout.rod_count = self.reactor.layout.rod_count + 1
+	end,
+	["plating"] = function (self)
+		self.reactor.max_internal_heat = self.reactor.max_internal_heat + self.const.maxhealth
+	end
+}
+
+---@type table<string, fun(self:IC2Component, reactor:IC2Reactor)>
+local ON_REMOVE = {
+	["fuel-rod"] = function (self)
+		self.reactor.layout.rod_count = math.max(self.reactor.layout.rod_count - 1, 0)
+	end,
+	["plating"] = function (self)
+		self.reactor.max_internal_heat = self.reactor.max_internal_heat - self.const.maxhealth
+	end
 }
 
 ---@type table<string, fun(self:IC2Component):number?>
@@ -105,12 +121,6 @@ ON["component-heat-exchanger"] = function(self)
 	self:get_next_transfer()
 end
 
----@param self IC2Component
-local function init(self)
-	if INIT[self.type] then
-		INIT[self.type](self)
-	end
-end
 
 ---@class IC2Component
 ---@field type ComponentType
@@ -152,7 +162,6 @@ function IC2Component.new(reactor, item, x, y)
 	component.max_heat = component.const.maxhealth
 	component.heat = math.floor((1 - item.health) * component.max_heat)
 	component:calc_health()
-	init(component)
 	if ON[component.name] then
 		component.on_type = component.name
 	else
@@ -163,7 +172,23 @@ function IC2Component.new(reactor, item, x, y)
 end
 
 function IC2Component:on()
-	return ON[self.on_type](self)
+	return ON[self.on_type](self) or 0
+end
+
+function IC2Component:on_insert()
+	if ON_INSERT[self.name] then
+		ON_INSERT[self.name](self)
+	elseif ON_INSERT[self.type] then
+		ON_INSERT[self.type](self)
+	end
+end
+
+function IC2Component:on_remove()
+	if ON_REMOVE[self.name] then
+		ON_REMOVE[self.name](self)
+	elseif ON_REMOVE[self.type] then
+		ON_REMOVE[self.type](self)
+	end
 end
 
 function IC2Component:get_pos()
