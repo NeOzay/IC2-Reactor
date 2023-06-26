@@ -5,7 +5,6 @@ local Fluid_reactor = require("scripts.fluid_reactor")
 local Layout = require("scripts.layout")
 local Gui = require("scripts.gui")
 local Component = require("scripts.components")
-local Text_rendering = require "scripts.text_rendering"
 
 if script.active_mods["gvv"] then require("__gvv__.gvv")() end
 
@@ -67,8 +66,7 @@ script.on_nth_tick(60, ontick)
 
 
 local events = defines.events
-script.on_event(events.on_built_entity, buildReactor,
-	{ { filter = "name", name = "ic2-reactor-main", mode = "or" }, { filter = "name", name = "ic2-fluid-reactor-main" } })
+script.on_event(events.on_built_entity, buildReactor, { { filter = "name", name = "ic2-reactor-main", mode = "or" }, { filter = "name", name = "ic2-fluid-reactor-main" } })
 script.on_event(events.on_pre_player_mined_item, removeReactor, { { filter = "name", name = "ic2-reactor-main" } })
 script.on_event(events.on_entity_died, removeReactor, { { filter = "name", name = "ic2-reactor-main" } })
 
@@ -78,16 +76,16 @@ script.on_event(events.on_player_joined_game, function(event)
 	game.players[event.player_index].force.research_all_technologies()
 end)
 script.on_event(events.on_player_left_game, function(event)
-	for key, reactor in pairs(global.reactors) do
+	for _, reactor in pairs(global.reactors) do
 		reactor:destroy_gui(event.player_index)
 	end
 end)
 
 
 script.on_event(defines.events.on_gui_opened, function (event)
-	if not event.entity or event.entity.name ~= "ic2-reactor-main" then return end
-	local player = game.get_player(event.player_index)
 	local entity = event.entity
+	if not event.entity or event.entity.name ~= "ic2-reactor-main" or not entity then return end
+	local player = game.get_player(event.player_index)
 	local reactor = Reactor.getIC2Reactor(entity.unit_number)
 	if not (reactor and player) then return end
 	local frame, visible = reactor:toggle_gui(player)
@@ -103,16 +101,13 @@ script.on_event(defines.events.on_gui_click, function(event)
 	local player = game.get_player(event.player_index)
 	local element = event.element
 	local reactor = Reactor.getIC2Reactor(element.tags.reactor_id --[[@as number]])
-	if not player or not reactor then return end
+	local cursor_stack = player and player.cursor_stack
+	if not player or not reactor or not cursor_stack then return end
 
 	local gui = reactor.guis[event.player_index]
 	if element.name == "IC2_button_slot" then
-		local cursor_item_name
-		local cursor_stack = player.cursor_stack
-		local x, y = element.tags.x, element.tags.y ---@type number,number
-
+		local x, y = element.tags.x--[[@as number]], element.tags.y--[[@as number]]
 		if cursor_stack.valid_for_read then ---@cast cursor_stack -?
-			cursor_item_name = player.cursor_stack.name
 			local current_sprite = element.sprite
 			local cursor_sprite = "item/"..player.cursor_stack.name
 			if current_sprite == "" then
@@ -121,7 +116,7 @@ script.on_event(defines.events.on_gui_click, function(event)
 				gui:update_slot_at(x, y)
 			elseif cursor_sprite == current_sprite then
 				local component = reactor.layout:get_component(x, y)
-				if component.health ~= 1 then return end
+				if component and component.health ~= 1 then return end
 				local success = reactor.layout:remove_component_at(x, y)
 				if success then cursor_stack.count = cursor_stack.count + 1 end
 				gui:update_slot_at(x, y)

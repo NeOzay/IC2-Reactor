@@ -124,7 +124,7 @@ end
 ---@field heat_production number
 ---@field heat number
 ---@field max_heat number
----@field health number
+---@field health float
 ---@field energy_prod number
 ---@field adjacent_rod number
 ---@field on_type string

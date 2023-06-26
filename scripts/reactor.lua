@@ -2,7 +2,7 @@ local Layout = require "scripts.layout"
 local Gui = require "scripts.gui"
 
 ---@class IC2Reactor
----@field reactorMain LuaEntity
+---@field entity LuaEntity
 ---@field interface LuaEntity
 ---@field status "idle"|"running"
 ---@field is_setup boolean
@@ -30,16 +30,16 @@ function IC2Reactor.getIC2Reactor(unit_number)
 	return global.reactors[unit_number]
 end
 
----@param reactorMainEntity LuaEntity
+---@param entity LuaEntity
 ---@return IC2Reactor
-function IC2Reactor.new(reactorMainEntity)
+function IC2Reactor.new(entity)
 	local reactor = setmetatable({
-		reactorMain = reactorMainEntity,
+		entity = entity,
 		status = "idle",
 		is_setup = false,
 		has_redstone_signal = false,
-		type = reactorMainEntity.name,
-		id = reactorMainEntity.unit_number,
+		type = entity.name,
+		id = entity.unit_number,
 		max_internal_heat = REACTOR_CONST.maxhealth,
 		internal_heat = 0,
 		guis = {},
@@ -47,7 +47,7 @@ function IC2Reactor.new(reactorMainEntity)
 	}, IC2Reactor)
 	reactor.layout = Layout.new(reactor, REACTOR_GRID.w, REACTOR_GRID.h)
 	reactor:calc_health()
-	global.reactors[reactorMainEntity.unit_number] = reactor
+	global.reactors[entity.unit_number] = reactor
 	global.class_instances.IC2Reactor[reactor] = true
 	return reactor
 end
@@ -57,36 +57,21 @@ function IC2Reactor:setup()
 	if self.is_setup then
 		return true
 	end
-	local reactorMain = self.reactorMain
-	local surface = reactorMain.surface
-	local p, f = reactorMain.position, reactorMain.force
-
-	local interface = surface.create_entity {
-		name = "ic2-reactor-interface",
-		position = { x = p.x, y = p.y + 1.5 },
-		force = f
-	}
-	if not interface then
-		return false
-	end
-
-	interface.destructible = false
-	interface.get_or_create_control_behavior()
-	interface.operable = false
-	self.interface = interface
 
 	self.is_setup = true
 	return true, self
 end
 
-function IC2Reactor:remove(player_index)
-	self.interface.destroy()
-	global.reactors[self.reactorMain.unit_number] = nil
+function IC2Reactor:remove()
+	if self.interface then
+		self.interface.destroy()
+	end
+	global.reactors[self.id] = nil
 end
 
 function IC2Reactor:on_tick()
 
-	local control = self.interface.get_or_create_control_behavior()
+	local control = self.entity.get_or_create_control_behavior()
 
 	local signal = 0
 	if control then
@@ -108,13 +93,13 @@ function IC2Reactor:on_tick()
 
 	local energy_product = self.layout:on_tick()
 	if self.layout.rod_count > 0 and self.has_redstone_signal then
-		self.reactorMain.surface.play_sound {
+		self.entity.surface.play_sound {
 			path = "Geiger",
-			position = self.reactorMain.position,
+			position = self.entity.position,
 			volume_modifier = 0.8
 		}
 	end
-	self.reactorMain.energy = self.reactorMain.energy + energy_product
+	self.entity.energy = self.entity.energy + energy_product
 	self.energy = energy_product
 end
 
@@ -175,7 +160,7 @@ function IC2Reactor:toggle_gui(player)
 end
 
 function IC2Reactor:destroy_gui(player_index)
-	local gui = self.guis[player.index]
+	local gui = self.guis[player_index]
 	if gui then
 		gui.main_frame:destroy()
 		self.guis[player_index] = nil
