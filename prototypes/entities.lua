@@ -50,18 +50,6 @@ local interface_connection = {
 -- reactor
 data:extend({
 	{
-		type = "container",
-		name = "ic2-reactor-container",
-		icon = reactor_icon,
-		icon_size = 32,
-		picture = empty_sprite,
-		inventory_size = 1,
-		selectable_in_game = true,
-		selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
-		flags = {"not-blueprintable"},
-		selection_priority=60
-	},
-	{
 		type = "accumulator",
 		name = "ic2-reactor-main",
 		icon = reactor_icon,
@@ -135,7 +123,7 @@ data:extend({
 		collision_box = {{-2, -2}, {2, 2}},
 		selection_box = {{-2, -2}, {2, 2}},
 		minable = {mining_time = 1, result = "ic2-reactor-main-item"},
-		selection_priority=40
+		selection_priority = 100
 	},
 	{
 		type = "constant-combinator",

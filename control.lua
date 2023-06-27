@@ -31,6 +31,7 @@ local function init()
 	local function weak_table() return setmetatable({}, { __mode = "k" }) end
 	global.reactors = global.reactors or {} ---@type IC2Reactor[]
 	global.clipboard = global.clipboard or {} ---@type table<number, table<number, string>>
+	global.guis = global.guis or {} ---@type table<integer, IC2Gui>
 
 	global.class_instances = global.class_instances or {}
 	local class_instances = global.class_instances
@@ -52,7 +53,7 @@ end
 local function ontick(ticks)
 	for _, reactor in pairs(global.reactors) do
 		reactor:on_tick()
-		for _, gui in pairs(reactor.guis) do
+		for _, gui in pairs(global.guis) do
 			gui:update()
 		end
 	end
@@ -76,10 +77,15 @@ script.on_event(events.on_entity_died, removeReactor, { { filter = "name", name 
 script.on_event(events.on_player_joined_game, function(event)
 	game.players[event.player_index].cheat_mode = true
 	game.players[event.player_index].force.research_all_technologies()
+	local player = game.get_player(event.player_index)
+	if player then
+		global.guis[event.player_index] = Gui.new(player)
+	end
 end)
 script.on_event(events.on_player_left_game, function(event)
-	for _, reactor in pairs(global.reactors) do
-		reactor:destroy_gui(event.player_index)
+		local gui = global.guis[event.player_index]
+	if gui then
+		gui:destroy()
 	end
 end)
 
@@ -89,10 +95,18 @@ script.on_event(defines.events.on_gui_opened, function (event)
 	if not event.entity or event.entity.name ~= "ic2-reactor-main" or not entity then return end
 	local player = game.get_player(event.player_index)
 	local reactor = Reactor.getIC2Reactor(entity.unit_number)
-	if not (reactor and player) then return end
-	local frame, visible = reactor:toggle_gui(player)
+	local gui = global.guis[event.player_index]
+	if not (reactor and player and gui) then return end
+	local is_new = gui:change_reactor(reactor)
+	local visible
+	if not is_new then
+		visible = gui:toggle()
+	elseif not gui:is_visible() then
+		gui:show()
+		visible = true
+	end
 	if visible then
-		player.opened = frame
+		player.opened = gui.main_frame
 	else
 		player.opened = nil
 	end
@@ -102,11 +116,11 @@ script.on_event(defines.events.on_gui_click, function(event)
 	if not (event.element and event.element.name:find("^IC2")) then return end
 	local player = game.get_player(event.player_index)
 	local element = event.element
-	local reactor = Reactor.getIC2Reactor(element.tags.reactor_id --[[@as number]])
+	local gui = global.guis[event.player_index]
+	local reactor = gui.reactor
 	local cursor_stack = player and player.cursor_stack
 	if not player or not reactor or not cursor_stack then return end
 
-	local gui = reactor.guis[event.player_index]
 	if element.name == "IC2_button_slot" then
 		local x, y = element.tags.x--[[@as number]], element.tags.y--[[@as number]]
 		if cursor_stack.valid_for_read then ---@cast cursor_stack -?
@@ -164,7 +178,6 @@ script.on_event(defines.events.on_gui_click, function(event)
 			if stack and stack.valid_for_read then
 				local y = math.ceil((index/reactor.layout.width))
 				local x = ((index-1)%reactor.layout.width)+1
-				game.print(x.." "..y)
 				local success = layout:insert_component(stack, x , y)
 				if success then
 					stack.count = stack.count - 1
@@ -177,5 +190,5 @@ script.on_event(defines.events.on_gui_click, function(event)
 			end
 		end
 	end
-	
+
 end)

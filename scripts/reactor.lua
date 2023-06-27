@@ -7,7 +7,6 @@ local Gui = require "scripts.gui"
 ---@field status "idle"|"running"
 ---@field is_setup boolean
 ---@field has_redstone_signal boolean
----@field guis table<integer, IC2Gui>
 ---@field layout IC2Layout
 ---@field type string
 ---@field internal_heat number
@@ -126,45 +125,6 @@ end
 function IC2Reactor:transfer_to(truc, heat)
 	local pull_heat = self:add_heat(-heat)
 	truc:add_heat(math.abs(pull_heat))
-end
-
----@param player LuaPlayer
----@param reactor IC2Reactor
-local function create_gui(player, reactor)
-	local gui = Gui.new(player, reactor)
-	reactor.guis[player.index] = gui
-	return gui
-end
-
----@param player LuaPlayer
-function IC2Reactor:open_gui(player)
-	local gui = self.guis[player.index] or create_gui(player, self)
-	gui.main_frame.force_auto_center()
-	gui:show()
-	return gui.main_frame
-end
-
----@param player LuaPlayer
-function IC2Reactor:close_gui(player)
-	local gui = self.guis[player.index] or create_gui(player, self)
-	if gui then
-		gui:hide()
-	end
-	return gui.main_frame
-end
-
----@param player LuaPlayer
-function IC2Reactor:toggle_gui(player)
-	local gui = self.guis[player.index] or create_gui(player, self)
-	return gui.main_frame, gui:toggle()
-end
-
-function IC2Reactor:destroy_gui(player_index)
-	local gui = self.guis[player_index]
-	if gui then
-		gui.main_frame:destroy()
-		self.guis[player_index] = nil
-	end
 end
 
 return IC2Reactor
