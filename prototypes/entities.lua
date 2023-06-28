@@ -1,4 +1,4 @@
-local reactor_icon = "__base__/graphics/entity/nuclear-reactor/reactor.png"
+local reactor_icon = "__IC2-Reactor__/assets/reactor_icon.png"
 local assets = "__IC2-Reactor__/assets/"
 
 local empty_sprite = {
@@ -11,8 +11,8 @@ local empty_sprite = {
 }
 
 local no_base_connector_template = util.table.deepcopy(universal_connector_template)
-no_base_connector_template. connector_main   = nil --remove base
-no_base_connector_template. connector_shadow = nil --remove base shadow
+no_base_connector_template.connector_main   = nil --remove base
+no_base_connector_template.connector_shadow = nil --remove base shadow
 
 local connector = circuit_connector_definitions.create(no_base_connector_template,{{
 	-- The "variation" determines in which direction the connector is drawn. I look
@@ -50,14 +50,15 @@ local interface_connection = {
 -- reactor
 data:extend({
 	{
-		type = "accumulator",
+		type = "electric-energy-interface",
 		name = "ic2-reactor-main",
 		icon = reactor_icon,
-		icon_size = 32,
+		icon_size = 64,
+		icon_mipmaps = 4,
 		max_health = 500,
 		vehicle_impact_sound = {filename = "__base__/sound/car-metal-impact.ogg", volume = 0.65},
-		charge_cooldown    = 1,
-		discharge_cooldown = 1,
+		--charge_cooldown    = 1,
+		--discharge_cooldown = 1,
 		picture = {
 			layers = {
 				{
@@ -94,11 +95,10 @@ data:extend({
 			type                   = 'electric',
 			usage_priority         = 'primary-output',
 			input_flow_limit       = '0kW',
-			buffer_capacity        = "100MJ",
-			output_flow_limit = "100MW"
+			buffer_capacity        = "1J",
 		},
 		
-			working_sound = {
+		working_sound = {
 			sound = {
 				type = "sound",
 				name = "NuclearReactorLoop",
@@ -114,12 +114,6 @@ data:extend({
 			idle_sound = { filename = "__base__/sound/idle1.ogg", volume = 0.6 },
 			apparent_volume = 2.5,
 		},
-
-		circuit_wire_max_distance = default_circuit_wire_max_distance,
-    
-		-- Here I use the data that I prepared above.
-		circuit_wire_connection_point = connector.points ,
-		circuit_connector_sprites     = connector.sprites,
 		collision_box = {{-2, -2}, {2, 2}},
 		selection_box = {{-2, -2}, {2, 2}},
 		minable = {mining_time = 1, result = "ic2-reactor-main-item"},

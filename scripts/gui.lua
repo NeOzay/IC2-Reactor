@@ -191,7 +191,7 @@ function Gui:update_all_slot()
   end
 end
 function Gui:update_power()
-  self.reactor_output.caption = Convertion(self.reactor.energy)
+  self.reactor_output.caption = Convertion(self.reactor.energy*60)
 end
 
 function Gui:update_heat()

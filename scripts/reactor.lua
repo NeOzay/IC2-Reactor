@@ -56,7 +56,18 @@ function IC2Reactor:setup()
 	if self.is_setup then
 		return true
 	end
-
+	local entity = self.entity
+	local surface = entity.surface
+	local p, f = entity.position, entity.force
+	local interface = surface.create_entity {
+		name = "ic2-reactor-interface",
+		position = { x = p.x, y = p.y + 1.5 },
+		force = f
+	}
+	if not interface then
+		return false
+	end
+	self.interface = interface
 	self.is_setup = true
 	return true, self
 end
@@ -68,9 +79,15 @@ function IC2Reactor:remove()
 	global.reactors[self.id] = nil
 end
 
+local function update_power_output(self, energy_product)
+	self.entity.power_production = energy_product
+	self.entity.electric_buffer_size = energy_product
+	self.energy = energy_product
+end
+
 function IC2Reactor:on_tick()
 
-	local control = self.entity.get_or_create_control_behavior()
+	local control = self.interface.get_or_create_control_behavior()
 
 	local signal = 0
 	if control then
@@ -90,7 +107,7 @@ function IC2Reactor:on_tick()
 		self.has_redstone_signal = false
 	end
 
-	local energy_product = self.layout:on_tick()
+	local energy_product = self.layout:on_tick()/60
 	if self.layout.rod_count > 0 and self.has_redstone_signal then
 		self.entity.surface.play_sound {
 			path = "Geiger",
@@ -98,8 +115,9 @@ function IC2Reactor:on_tick()
 			volume_modifier = 0.8
 		}
 	end
-	self.entity.energy = self.entity.energy + energy_product
-	self.energy = energy_product
+	if self.energy ~= energy_product then
+		update_power_output(self, energy_product)
+	end
 end
 
 function IC2Reactor:calc_health()
